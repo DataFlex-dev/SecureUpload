@@ -1,0 +1,12 @@
+﻿Use SecureUpload\cWebSecureFileUploadButton.pkg
+
+Class cWebSecureDocUploadButton is a cWebSecureFileUploadButton
+
+    Procedure Construct_Object
+        Forward Send Construct_Object
+        
+        Set psAccept to C_SECUP_PROFILE_EXTENSIONS_DOC
+        Set pullMaxFileSize to C_SECUP_PROFILE_EXTENSIONS_DOC_MAX_FILE_SIZE
+    End_Procedure
+    
+End_Class

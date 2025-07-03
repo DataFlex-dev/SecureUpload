@@ -1,0 +1,11 @@
+[Workspace]
+Home=.\
+AppSrcPath=.\AppSrc
+AppHTMLPath=.\
+BitmapPath=.\
+IdeSrcPath=.\
+DataPath=.\
+DDSrcPath=.\
+HelpPath=.\
+ProgramPath=.\
+FileList=.\DummyFilelist.cfg

@@ -1,0 +1,7 @@
+[Properties]
+Version=23.0
+[WorkspacePaths]
+ConfigFile=.\Config.ws
+[Libraries]
+Lib1=.\Libraries\AVCheck\Library\AVCheck 23.0.sws
+Lib2=.\Libraries\File\Library\File 23.0.sws
