@@ -17,5 +17,15 @@ Class cWebSecureFileUploadForm is a cWebFileUploadForm
         
         Send End_Define_cWebSecureBaseFileUpload
     End_Procedure
+      
+    {Category=Behavior}
+    { MethodType=Event }
+    Procedure OnFileFailed String  sFileName ;
+                           String  sLocalPath ;
+                           Integer iErrorCode ;
+                           String  sErrDetail
+        Forward Send OnFileFailed sFileName sLocalPath iErrorCode sErrDetail
+        Send ClearDisplay
+    End_Procedure
     
 End_Class
