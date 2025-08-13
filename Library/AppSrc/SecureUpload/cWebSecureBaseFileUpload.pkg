@@ -62,6 +62,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         String sPath
         If (SizeOfString(psPrivate_UploadDir(Self)) = 0) Begin
             Get psDataPath of (phoWorkspace(ghoApplication)) to sPath
+            Get PathAtIndex of (phoWorkspace(ghoApplication)) sPath 1 to sPath
             If (Mid(C_SECUP_DEFAULT_DATA_UPLOAD_DIR, 1, 2) = ":") Begin
                 Move C_SECUP_DEFAULT_DATA_UPLOAD_DIR to sPath
             End
@@ -73,6 +74,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         
         If (SizeOfString(psPrivate_TemporaryDir(Self)) = 0 and pbTemporaryDir(Self)) Begin
             Get psDataPath of (phoWorkspace(ghoApplication)) to sPath
+            Get PathAtIndex of (phoWorkspace(ghoApplication)) sPath 1 to sPath
             If (Mid(C_SECUP_DEFAULT_DATA_TEMP_DIR, 1, 2) = ":") Begin
                 Move C_SECUP_DEFAULT_DATA_TEMP_DIR to sPath
             End
