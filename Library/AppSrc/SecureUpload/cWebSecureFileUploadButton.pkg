@@ -1,0 +1,21 @@
+﻿Use cWebFileUploadButton.pkg
+Use SecureUpload\cWebSecureBaseFileUpload.pkg
+
+{ OverrideFunction = OnFileUpload Visibility = Private }
+{ OverrideFunction = OnLocalFileUpload Visibility = Private }
+Class cWebSecureFileUploadButton is a cWebFileUploadButton
+    Import_Class_Protocol cWebSecureBaseFileUpload_Mixin
+
+    Procedure Construct_Object
+        Forward Send Construct_Object
+        
+        Send Define_cWebSecureBaseFileUpload
+    End_Procedure
+    
+    Procedure End_Construct_Object
+        Forward Send End_Construct_Object
+        
+        Send End_Define_cWebSecureBaseFileUpload
+    End_Procedure
+    
+End_Class

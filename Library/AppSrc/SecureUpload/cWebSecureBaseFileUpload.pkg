@@ -1,0 +1,446 @@
+﻿Use WinUuid.pkg
+Use GlobalFunctionsProcedures.pkg
+Use cWorkspace.pkg
+
+Use AVCheck\AVCheck.pkg
+Use File\Type.pkg
+
+Use SecureUpload\Settings.pkg
+
+Enum_List
+    Define C_SECUP_SUCCESS for 0
+    Define C_SECUP_INVALID_UPLOAD_RECORD
+    Define C_SECUP_AVCHECK_FAILED
+    Define C_SECUP_FILETYPE_CHECK_FAILED
+    Define C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE
+    Define C_SECUP_UPLOAD_TOO_LARGE
+    Define C_SECUP_UPLOAD_DIR_NOT_SET_OR_UNAVAILABLE
+    Define C_SECUP_FILENAME_TOO_LONG
+    Define C_SECUP_FILENAME_ALREADY_EXISTS
+    Define C_SECUP_FILENAME_DOES_NOT_CONTAIN_EXTENSION
+End_Enum_List
+
+{ OverrideFunction = OnFileUpload Visibility = Private }
+Class cWebSecureBaseFileUpload_Mixin is a Mixin
+    
+    Import_Class_Protocol cAVCheck_Mixin
+
+    Procedure Define_cWebSecureBaseFileUpload
+        Send Define_cAVCheck_Mixin
+        
+        // Overwrite defaults of avcheck to the global settings of SECUP.
+        Set psAVProgram to C_SECUP_AVCHECK_PROGRAM_DEFAULT
+        Set psAVArgs to C_SECUP_AVCHECK_ARGUMENTS_DEFAULT
+        Set piAVErrorCode to C_SECUP_AVCHECK_ERRORCODE_DEFAULT
+        Set piAVSuccessCode to C_SECUP_AVCHECK_SUCCESSCODE_DEFAULT
+        
+        Set psAccept to C_SECUP_ACCEPT_DEFAULT
+        
+        {Visibility=Private}
+        Property String psPrivate_UploadDir // the directory the files get moved to eventually
+        {Visibility=Private}
+        Property String psPrivate_TemporaryDir // the optional directory used as intermediary
+        
+        {Category=Behavior}
+        Property Boolean pbTemporaryDir C_SECUP_USE_TEMPORARY_DIR_DEFAULT
+        {Category=Behavior}
+        Property Boolean pbAutoNaming C_SECUP_USE_AUTO_NAMING_DEFAULT
+        {Category=Behavior}
+        Property UBigInt pullMaxFileSize C_SECUP_MAX_FILE_SIZE_DEFAULT
+        {Category=Behavior}
+        Property UBigInt pullMaxFileNameLength C_SECUP_MAX_FILE_NAME_LENGTH_DEFAULT
+        {Category=Behavior}
+        Property Boolean pbAutoEraseFileOnFail C_SECUP_AUTO_ERASE_FILE_ON_FAIL_DEFAULT
+        {Category=Behavior}
+        Property Boolean pbCheckVirus C_SECUP_CHECK_VIRUS_DEFAULT
+        {Category=Behavior}
+        Property Boolean pbCheckContent C_SECUP_CHECK_CONTENT_DEFAULT
+    End_Procedure
+    
+    Procedure End_Define_cWebSecureBaseFileUpload
+        // Use default paths
+        String sPath
+        If (SizeOfString(psPrivate_UploadDir(Self)) = 0) Begin
+            Get psDataPath of (phoWorkspace(ghoApplication)) to sPath
+            Get PathAtIndex of (phoWorkspace(ghoApplication)) sPath 1 to sPath
+            If (Mid(C_SECUP_DEFAULT_DATA_UPLOAD_DIR, 1, 2) = ":") Begin
+                Move C_SECUP_DEFAULT_DATA_UPLOAD_DIR to sPath
+            End
+            Else Begin
+                Move (sPath + "/" + C_SECUP_DEFAULT_DATA_UPLOAD_DIR) to sPath
+            End
+            Set psUploadDir to sPath
+        End
+        
+        If (SizeOfString(psPrivate_TemporaryDir(Self)) = 0 and pbTemporaryDir(Self)) Begin
+            Get psDataPath of (phoWorkspace(ghoApplication)) to sPath
+            Get PathAtIndex of (phoWorkspace(ghoApplication)) sPath 1 to sPath
+            If (Mid(C_SECUP_DEFAULT_DATA_TEMP_DIR, 1, 2) = ":") Begin
+                Move C_SECUP_DEFAULT_DATA_TEMP_DIR to sPath
+            End
+            Else Begin
+                Move (sPath + "/" + C_SECUP_DEFAULT_DATA_TEMP_DIR) to sPath
+            End
+            Set psTemporaryDir to sPath
+        End
+    End_Procedure
+    
+    {Category=BehaviorOpt}
+    {MethodType=Property}
+    Procedure Set psUploadDir String sDir
+        Send MakeUploadDirectory (&sDir)
+        Set psPrivate_UploadDir to sDir
+    End_Procedure
+    
+    {Category=BehaviorOpt}
+    {MethodType=Property}
+    Function psUploadDir Returns String
+        Function_Return (psPrivate_UploadDir(Self))
+    End_Function
+    
+    {Category=BehaviorOpt}
+    {MethodType=Property}
+    Procedure Set psTemporaryDir String sDir
+        Send MakeUploadDirectory (&sDir)
+        Set psPrivate_TemporaryDir to sDir
+    End_Procedure
+    
+    {Category=BehaviorOpt}
+    {MethodType=Property}
+    Function psTemporaryDir Returns String
+        Function_Return (psPrivate_TemporaryDir(Self))
+    End_Function
+    
+    {Category=Behavior}
+    { MethodType=Event }
+    Procedure OnFileFinished String sFileName String sLocalPath
+    End_Procedure
+      
+    {Category=Behavior}
+    { MethodType=Event }
+    Procedure OnFileFailed String  sFileName ;
+                           String  sLocalPath ;
+                           Integer iErrorCode ;
+                           String  sErrDetail
+        Error DFERR_PROGRAM (SFormat("""
+            Failed to upload file: %1
+            %2
+            """, sFileName, sErrDetail))
+    End_Procedure
+    
+    Function SecUpErrToMessage Integer iErr String sFileName Returns String
+        Case Begin
+            Case (iErr = C_SECUP_SUCCESS)
+                Function_Return "File was uploaded successfully."
+                Case Break
+            Case (iErr = C_SECUP_INVALID_UPLOAD_RECORD)
+                Function_Return "Invalid upload record."
+                Case Break
+            Case (iErr = C_SECUP_AVCHECK_FAILED)
+                Function_Return "The file positive for malicious code/otherwise."
+                Case Break
+            Case (iErr = C_SECUP_FILETYPE_CHECK_FAILED)
+                Function_Return "The file does not contain the content it suggests it should have."
+                Case Break
+            Case (iErr = C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE)
+                Function_Return "Unable to determine the file size."
+                Case Break
+            Case (iErr = C_SECUP_UPLOAD_TOO_LARGE)
+                Function_Return "The file is too large."
+                Case Break
+            Case (iErr = C_SECUP_UPLOAD_DIR_NOT_SET_OR_UNAVAILABLE)
+                Function_Return "Upload/Temporary directory not set."
+                Case Break
+            Case (iErr = C_SECUP_FILENAME_TOO_LONG)
+                Function_Return "The filename is too large."
+                Case Break
+            Case (iErr = C_SECUP_FILENAME_ALREADY_EXISTS)
+                Function_Return "The file already exists."
+                Case Break
+            Case (iErr = C_SECUP_FILENAME_DOES_NOT_CONTAIN_EXTENSION)
+                Function_Return (SFormat("'%1', does not contain a valid extension.", sFileName))
+                Case Break
+            Case Else
+                Function_Return "Unspecified error occured."
+                Case Break        
+        Case End
+    End_Function
+    
+    // Internals //////////////////////////////////////////////////////////////////////
+    
+    { Visibility=Private }
+    // Index
+    // Filename
+    // Size
+    // Type
+    
+    // Index
+    // Key
+    Function DoStartUpload Returns String
+        String[][] aFiles 
+        String[][] aResult
+        String sPath sData
+        Integer iFile iTo
+        tWebValueTree tData
+        Handle hoJsonObj
+
+        //  Deserialize file details
+        Get ptActionData to tData
+        ValueTreeDeserializeParameter tData to afiles
+        
+        Move (SizeOfArray(aFiles) - 1) to iTo
+        
+        For iFile from 0 to iTo
+            Move aFiles[iFile][0] to aResult[iFile][0]
+            Get GenerateUploadPathForFile aFiles[iFile][1] to sPath
+            
+            If (sPath <> "") Begin
+                Get FileUploadKey of ghoWebResourceManager sPath to aResult[iFile][1]
+            End
+            Else Begin
+                Move "" to aResult[iFile][1]
+            End
+        Loop
+        
+        // Serialize result
+        Get Create (RefClass(cJsonObject)) to hoJsonObj
+        Send DataTypeToJson of hoJsonObj aResult
+        Get Stringify of hoJsonObj to sData
+        Send Destroy of hoJsonObj
+        
+        Function_Return sData
+    End_Function
+    
+    { Visibility=Private }
+    Register_Function StrCount String sSearch String sValue Returns UBigInt
+    
+    { Visibility=Private }
+    Function GenerateUploadPathForFile String sFileName Returns String
+        // Check filename length
+        If (Length(sFileName) > pullMaxFileNameLength(Self)) Begin
+            Send OnFileFailed sFileName "" C_SECUP_FILENAME_TOO_LONG (SecUpErrToMessage(Self, C_SECUP_FILENAME_TOO_LONG, sFileName))
+            Function_Return ""
+        End
+        
+        // Make sure we have an extension
+        If (not(StrCount(Self, ".", sFileName))) Begin
+            Send OnFileFailed sFileName "" C_SECUP_FILENAME_DOES_NOT_CONTAIN_EXTENSION (SecUpErrToMessage(Self, C_SECUP_FILENAME_DOES_NOT_CONTAIN_EXTENSION, sFileName))
+            Function_Return ""
+        End
+        
+        // Register and set
+        String sPath
+        Get TemporaryOrUploadDir to sPath
+        If (SizeOfString(sPath) = 0) Begin
+            Send OnFileFailed sFileName "" C_SECUP_UPLOAD_DIR_NOT_SET_OR_UNAVAILABLE (SecUpErrToMessage(Self, C_SECUP_UPLOAD_DIR_NOT_SET_OR_UNAVAILABLE, sFileName))
+            Function_Return ""
+        End
+        Send RegisterUploadFolder of ghoWebResourceManager sPath
+        
+        // Mangle Filename
+        String sTempPath sUUID
+        Boolean bExists
+        Repeat
+            Get RandomHexUUID to sUUID
+            Move (sPath + sUUID + "." + sFileName) to sTempPath
+            File_Exist sTempPath bExists
+        Until (not(bExists))
+        
+        Function_Return sTempPath
+    End_Function
+    
+    {Visibility=Private}
+    Function IsTemporaryDirEnabled Returns Boolean
+        String sPath
+        Get psTemporaryDir to sPath
+        If (SizeOfString(sPath) = 0 or not(pbTemporaryDir(Self))) Begin
+            Function_Return False
+        End
+        Function_Return True
+    End_Function
+    
+    { Visibility=Private }
+    Function DoFileFinished String sFileName String sResourceId Returns String
+        // sFileName not to be trusted but 
+        
+        // retrieve sLocalPath
+        String sLocalPath
+        Get FileUploadKeyToPath of ghoWebResourceManager sResourceId to sLocalPath
+        If (SizeOfString(sLocalPath) = 0) Begin
+            If (pbAutoEraseFileOnFail(Self)) Begin
+                EraseFile sLocalPath
+            End
+            Send OnFileFailed sFileName "" C_SECUP_INVALID_UPLOAD_RECORD  (SecUpErrToMessage(Self, C_SECUP_INVALID_UPLOAD_RECORD, sFileName))
+            Function_Return ""
+        End
+        
+        // retrieve sFileName
+        Integer iPos
+        Move (ExtractFileName(sLocalPath)) to sFileName
+        Move (Pos(".", sFileName)) to iPos
+        Move (Right(sFileName, Length(sFileName) - iPos)) to sFileName
+        
+        // Anti-Virus check
+        Integer iErr
+        String sMessage
+        If (pbCheckVirus(Self)) Begin
+            Get AVCheck sLocalPath to iErr
+            If (iErr) Begin
+                If (pbAutoEraseFileOnFail(Self)) Begin
+                    EraseFile sLocalPath
+                End
+                Get AVErrToMessage iErr sFileName to sMessage
+                Send OnFileFailed sFileName sLocalPath C_SECUP_AVCHECK_FAILED sMessage
+                Function_Return ""
+            End
+        End
+        
+        // File type check
+        If (pbCheckContent(Self)) Begin
+            Get FileMatchesPattern (psAccept(Self)) sLocalPath to iErr
+            If (iErr) Begin
+                If (pbAutoEraseFileOnFail(Self)) Begin
+                    EraseFile sLocalPath
+                End
+                Get FileErrToMessage iErr sFileName to sMessage
+                Send OnFileFailed sFileName sLocalPath C_SECUP_FILETYPE_CHECK_FAILED sMessage
+                Function_Return ""
+            End
+        End
+        
+        // Check the file size
+        UBigInt ullSize
+        If (pullMaxFileSize(Self) <> 0) Begin
+            Get FileSize sLocalPath to ullSize
+            If (not(ullSize)) Begin
+                If (pbAutoEraseFileOnFail(Self)) Begin
+                    EraseFile sLocalPath
+                End
+                Send OnFileFailed sFileName sLocalPath C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE (SecUpErrToMessage(Self, C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE, sFileName))
+                Function_Return ""
+            End
+            If (ullSize > pullMaxFileSize(Self)) Begin
+                If (pbAutoEraseFileOnFail(Self)) Begin
+                    EraseFile sLocalPath
+                End
+                Send OnFileFailed sFileName sLocalPath C_SECUP_UPLOAD_TOO_LARGE (SecUpErrToMessage(Self, C_SECUP_UPLOAD_TOO_LARGE, sFileName))
+                Function_Return ""
+            End
+        End
+        
+        // Move to destination
+        String sDestPath sTempPath sUUID
+        Boolean bExists bAutoNaming
+        Get psUploadDir to sDestPath
+        Get pbAutoNaming to bAutoNaming
+        
+        // If we are not using temporary directories and auto naming is on, then we are already done.
+        // otherwise we have to move anyway.
+        If (not(IsTemporaryDirEnabled(Self)) and bAutoNaming) Begin
+            Send OnFileFinished sFileName sLocalPath
+            Function_Return ""
+        End
+        
+        // If autonaming is on, we first try to move the file with the currently mangled name.
+        // If that name by coincidence exitst, we get a new uuid.
+        If (pbAutoNaming(Self)) Begin
+            Move (sDestPath + ExtractFileName(sLocalPath)) to sTempPath
+            File_Exist sTempPath bExists
+            
+            While (bExists)
+                Get RandomHexUUID to sUUID
+                Move (sDestPath + sUUID + "." + sFileName) to sTempPath
+                File_Exist sTempPath bExists
+            Loop
+            
+            Move sTempPath to sDestPath
+        End
+        Else Begin
+            Move (sDestPath + sFileName) to sDestPath
+            File_Exist sDestPath bExists
+            If (bExists) Begin
+                If (pbAutoEraseFileOnFail(Self)) Begin
+                    EraseFile sLocalPath
+                End
+                Send OnFileFailed sFileName sLocalPath C_SECUP_FILENAME_ALREADY_EXISTS (SecUpErrToMessage(Self, C_SECUP_FILENAME_ALREADY_EXISTS, sFileName))
+                Function_Return ""
+            End
+        End
+        
+        // Move the file
+        CopyFile sLocalPath to sDestPath
+        EraseFile sLocalPath
+        
+        Send OnFileFinished sFileName sDestPath
+        Function_Return ""
+    End_Function
+    
+    {Visibility=Private}
+    Function TemporaryOrUploadDir Returns String
+        String sPath
+        Get psTemporaryDir to sPath
+        If (SizeOfString(sPath)) Begin
+            Function_Return sPath
+        End
+        Get psUploadDir to sPath
+        Function_Return sPath
+    End_Function
+    
+    {Visibility=Private}
+    Procedure MakeUploadDirectory String ByRef sDir
+        // File_Exists requires no /
+        If (Right(sDir, 1) = "\" or Right(sDir, 1) = "/") Begin
+            Move (Left(sDir, Length(sDir) - 1)) to sDir
+        End
+        
+        // Create if not exists
+        Boolean bExists
+        File_Exist sDir bExists
+        If (not(bExists)) Begin
+            Make_Directory sDir
+            
+            // If it still does not exist cancel
+            File_Exist sDir bExists
+            If (not(bExists)) Begin
+                Error DFERR_PROGRAM "Could not create the upload directory, using previous."
+                Procedure_Return
+            End
+        End
+        
+        // Repair path
+        Move (sDir + "\") to sDir
+    End_Procedure
+    
+    { Visibility=Private }
+    Function StrCount String sSearch String sValue Returns UBigInt
+        UBigInt iCount
+        Integer iPos
+        Repeat
+            Move (Pos(sSearch, sValue, iPos)) to iPos
+            If (iPos) Begin
+                Increment iCount
+                Increment iPos
+            End
+        Until (not(iPos))
+        Function_Return iCount
+    End_Function
+    
+    { Visibility=Private }
+    Function FileSize String sFileName Returns UBigInt
+        tWin32FindDataW Win32FindData
+        Integer iVoid
+        Handle hFileFind
+        UBigInt ullSize
+        
+        Move (winFindFirstFileW(sFilename, AddressOf(Win32FindData))) to hFileFind
+        If (hFileFind <> INVALID_HANDLE_VALUE) Begin
+            Move (winFindClose(hFileFind)) to iVoid
+        End
+        
+        Move (MemCopy(AddressOf(ullSize), AddressOf(Win32FindData.nFileSizeLow), 4)) to iVoid
+        Move (MemCopy(AddressOf(ullSize) + 4, AddressOf(Win32FindData.nFileSizeHigh), 4)) to iVoid
+        
+        Function_Return ullSize
+    End_Function
+
+End_Class

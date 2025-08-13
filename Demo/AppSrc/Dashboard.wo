@@ -1,0 +1,46 @@
+﻿Use cWebView.pkg
+Use cWebPanel.pkg
+Use cWebForm.pkg
+Use cWebButton.pkg
+Use cWebGroup.pkg
+Use cWebSpacer.pkg
+Use cWebHtmlBox.pkg
+Use cWebMenuGroup.pkg
+Use cWebMenuItem.pkg
+Use cWebLabel.pkg
+Use cWebList.pkg
+Use cWebColumn.pkg
+Use SecureUpload\Profiles.pkg
+
+Object oDashboard is a cWebView
+    Set piMaxWidth to 1024
+    
+    Set psCaption to "Dashboard"
+    Set peViewType to vtUndefined
+    Set pbShowCaption to False
+    Set psCSSClass to "Dashboard"
+    
+    Object oWebMainPanel is a cWebPanel
+        Set piColumnCount to 12
+
+        Object oWebFileUploadButton1 is a cWebSecureFileUploadButton
+            Set piColumnSpan to 4
+            Set psCaption to "Upload File(s)"
+            
+            Procedure OnFileFailed String sFileName String sLocalPath Integer iErrorCode String sErrDetail
+                Forward Send OnFileFailed sFileName sLocalPath iErrorCode sErrDetail
+            End_Procedure
+
+            Procedure OnFileFinished String sFileName String sLocalPath
+                Forward Send OnFileFinished sFileName sLocalPath
+            End_Procedure
+            
+        End_Object
+        
+    End_Object
+    
+    Procedure OnBeforeShow
+        // Each time this view is shown we will update the appropriate information.
+    End_Procedure
+
+End_Object

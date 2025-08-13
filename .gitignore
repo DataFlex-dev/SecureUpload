@@ -12,3 +12,7 @@ Demo/AppHtml/CssThemes
 Demo/AppHtml/DfEngine
 Demo/AppHtml/web.config
 Demo/AppHtml/global.asa
+Demo/Programs/**.dll
+Demo/Programs/**.mgc
+Demo/Data/temp
+Demo/Data/uploads

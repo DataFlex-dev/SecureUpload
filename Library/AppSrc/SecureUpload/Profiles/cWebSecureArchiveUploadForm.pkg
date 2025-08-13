@@ -1,0 +1,12 @@
+﻿Use SecureUpload\cWebSecureFileUploadForm.pkg
+
+Class cWebSecureArchiveUploadForm is a cWebSecureFileUploadForm
+
+    Procedure Construct_Object
+        Forward Send Construct_Object
+        
+        Set psAccept to C_SECUP_PROFILE_EXTENSIONS_ARCHIVE
+        Set pullMaxFileSize to C_SECUP_PROFILE_EXTENSIONS_ARCHIVE_MAX_FILE_SIZE
+    End_Procedure
+    
+End_Class

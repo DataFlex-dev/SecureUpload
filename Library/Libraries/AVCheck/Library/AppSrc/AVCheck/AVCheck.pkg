@@ -1,0 +1,241 @@
+﻿Use UI
+
+#IFNDEF C_AVCHECK_PROGRAM_DEFAULT
+Define C_AVCHECK_PROGRAM_DEFAULT for "C:\Program Files\Windows Defender\MpCmdRun.exe"
+#ENDIF
+#IFNDEF C_AVCHECK_ARGUMENTS_DEFAULT
+Define C_AVCHECK_ARGUMENTS_DEFAULT for '-Scan -ScanType 3 -DisableRemediation -SignatureUpdate -File {file}'
+#ENDIF
+#IFNDEF C_AVCHECK_ERRORCODE_DEFAULT
+Define C_AVCHECK_ERRORCODE_DEFAULT for 2
+#ENDIF
+#IFNDEF C_AVCHECK_SUCCESSCODE_DEFAULT
+Define C_AVCHECK_SUCCESSCODE_DEFAULT for 0
+#ENDIF
+
+Enum_List
+    Define C_AV_Unkown_AV_Error for -3
+    Define C_AV_File_Not_Exists for -2
+    Define C_AV_AV_Not_Found for -1
+    Define C_AV_Ok for 0
+    Define C_AV_Contains_Threat for 1
+End_Enum_List
+
+#IFNDEF _struct_WINAPI_SECURITY_ATTRIBUTES
+Struct WINAPI_SECURITY_ATTRIBUTES
+    DWord   nLength
+#IFDEF IS$WIN64
+    DWord padding1
+#ENDIF
+    Pointer lpSecurityDescriptor
+    Integer bInheritHandle
+End_Struct
+#ENDIF
+
+#IFNDEF _struct_WINAPI_PROCESS_INFORMATION
+Struct WINAPI_PROCESS_INFORMATION
+    Handle hProcess
+    Handle hThread
+    DWord  dwProcessId
+    DWord  dwThreadId
+End_Struct
+#ENDIF
+
+#IFNDEF _struct_WINAPI_STARTUPINFO
+Struct WINAPI_STARTUPINFO
+    DWord   cb
+#IFDEF IS$WIN64
+    DWord   padding1
+#ENDIF
+    Pointer lpReserved
+    Pointer lpDesktop
+    Pointer lpTitle
+    DWord   dwX
+    DWord   dwY
+    DWord   dwXSize
+    DWord   dwYSize
+    DWord   dwXCountChars
+    DWord   dwYCountChars
+    DWord   dwFillAttribute
+    DWord   dwFlags
+    Integer wShowWindow
+    Integer cbReserved2
+    Pointer lpReserved2
+    Handle  hStdInput
+    Handle  hStdOutput
+    Handle  hStdError
+End_Struct
+#ENDIF
+
+#IFNDEF GET_WINAPI_CreateFileW
+External_Function WINAPI_CreateFileW "CreateFileW" Kernel32.dll ;
+    Pointer wFileSpec ;
+    Integer iDesiredAccess ;
+    Integer iShareMode ;
+    Pointer ptWin32_SECURITY_ATTRIBUTESOut ; 
+    Integer iCreationDisposition ;
+    Integer iFlagsAndAttributes ;
+    Handle hTemplateFile ;
+    Returns Handle
+#ENDIF
+    
+#IFNDEF GET_WINAPI_CloseHandle
+External_Function WINAPI_CloseHandle "CloseHandle" Kernel32.Dll ;
+    Handle hObject ;
+    Returns Boolean
+#ENDIF
+    
+#IFNDEF GET_WINAPI_CreateProcessW
+External_Function WINAPI_CreateProcessW "CreateProcessW" Kernel32.dll ;
+    Pointer lpwApplicationName ;
+    Pointer lpwCommandLine ;
+    Pointer lpProcessAttributes ;
+    Pointer lpThreadAttributes ;
+    Integer bInheritHandles ;
+    DWord   dwCreationFlags ;
+    Pointer lpEnvironment ;
+    Pointer lpwCurrentDirectory ;
+    Pointer lpStartupInfo ;
+    Pointer lpProcessInformation ;
+    Returns Boolean
+#ENDIF
+    
+#IFNDEF GET_WINAPI_WaitForSingleObject
+External_Function WINAPI_WaitForSingleObject "WaitForSingleObject" Kernel32.dll ;
+    Handle  hHandle ;
+    DWord   dwMilliseconds ;
+    Returns DWord
+#ENDIF
+
+#IFNDEF GET_WINAPI_GetExitCodeProcess
+External_Function WINAPI_GetExitCodeProcess "GetExitCodeProcess" Kernel32.dll ;
+    Handle  hHandle ;
+    Pointer dwpExitCode ;
+    Returns Boolean
+#ENDIF
+
+Class cAVCheck_Mixin is a cObject
+    
+    Procedure Define_cAVCheck_Mixin
+        {Category=AntiVirus}
+        Property String psAVProgram C_AVCHECK_PROGRAM_DEFAULT
+        {Category=AntiVirus}
+        Property String psAVArgs C_AVCHECK_ARGUMENTS_DEFAULT
+        {Category=AntiVirus}
+        Property Integer piAVErrorCode C_AVCHECK_ERRORCODE_DEFAULT
+        {Category=AntiVirus}
+        Property Integer piAVSuccessCode C_AVCHECK_SUCCESSCODE_DEFAULT
+    End_Procedure
+    
+    Function AVEscape String sValue Returns String
+        Move (Replaces('"', sValue, '\"')) to sValue
+        Move (Replaces('"', sValue, '\"')) to sValue
+        Function_Return sValue
+    End_Function
+    
+    Function AVFormArguments String sFilename Returns String
+        Move (Replaces("{file}", psAVArgs(Self), '"'+ AVEscape(Self, sFilename) +'"')) to sFilename
+        Function_Return sFilename
+    End_Function
+    
+    Function AVCheck String sFilename Returns Integer
+        Boolean bExists
+        File_Exist (psAVProgram(Self)) bExists
+        If not bExists Function_Return C_AV_AV_Not_Found
+        
+        File_Exist sFilename bExists
+        If not bExists Function_Return C_AV_File_Not_Exists
+        
+        Handle hProc
+        WINAPI_SECURITY_ATTRIBUTES sa
+        Move (SizeOfType(WINAPI_SECURITY_ATTRIBUTES)) to sa.nLength
+        Move True to sa.bInheritHandle  
+        
+        WINAPI_STARTUPINFO si
+        WINAPI_PROCESS_INFORMATION pi
+        
+        WString wsFile
+        Move ('"' + AVEscape(Self, psAVProgram(Self)) + '"' * AVFormArguments(Self, sFilename)) to wsFile
+        
+        DWord dwExitCode
+        Move (piAVErrorCode(Self)) to dwExitCode
+        Move (WINAPI_CreateProcessW(0, AddressOf(wsFile) ;
+                                    , 0, 0, True, |CI$08000000, 0, 0 ;
+                                    , AddressOf(si), AddressOf(pi))) to hProc
+        If (not(hProc)) Begin
+            Function_Return C_AV_AV_Not_Found
+        End
+        
+        Move (WINAPI_WaitForSingleObject(pi.hProcess, $FFFFFFFF)) to hProc
+        
+        If (not(WINAPI_GetExitCodeProcess(pi.hProcess, AddressOf(dwExitCode)))) Begin
+            Move (WINAPI_CloseHandle(pi.hThread)) to hProc
+            Move (WINAPI_CloseHandle(pi.hProcess)) to hProc
+            Function_Return C_AV_Unkown_AV_Error
+        End
+        
+        Move (WINAPI_CloseHandle(pi.hThread)) to hProc
+        Move (WINAPI_CloseHandle(pi.hProcess)) to hProc
+
+        Case Begin
+            Case (dwExitCode = piAVErrorCode(Self))
+                Function_Return C_AV_Contains_Threat
+                Case Break
+            Case (dwExitCode = piAVSuccessCode(Self))
+                Function_Return C_AV_Ok
+                Case Break
+            Case Else
+                Function_Return C_AV_Unkown_AV_Error
+                Case Break
+        Case End
+    End_Function
+    
+    Function AVErrToMessage Integer iErr String sFileName Returns String
+        String sMsg  
+        
+        Case Begin
+            Case (iErr = C_AV_Contains_Threat)
+                Move ("The scanned file '" + sFileName + "' might contain a threat.") to sMsg
+                Case Break
+            Case (iErr = C_AV_File_Not_Exists)
+                Move ("The to-be-scanned file '" + sFileName * "' does not exist.") to sMsg
+                Case Break
+            Case (iErr = C_AV_AV_Not_Found)
+                Move "The anti-virus tool could not be found." to sMsg
+                Case Break
+            Case Else
+                Move "An unknown AV-related error occurred." to sMsg         
+                Case Break
+        Case End    
+    
+        Function_Return sMsg
+    End_Function  
+    
+    Procedure AVThrow Integer iErr String sFilename
+        String sErrMsg
+        
+        If (iErr <> C_AV_Ok) Begin
+            Get AVErrToMessage iErr sFilename to sErrMsg
+            Error 8710 sErrMsg
+        End
+    End_Procedure
+    
+End_Class
+
+{ OverrideProperty = psAVProgram Category = Behavior }
+{ OverrideProperty = psAVArgs Category = Behavior }
+{ OverrideProperty = piAVErrorCode Category = Behavior }
+{ OverrideProperty = piAVSuccessCode Category = Behavior }
+Class cAVCheck is a cObject
+    
+    Import_Class_Protocol cAVCheck_Mixin
+    
+    Procedure Construct_Object
+        Forward Send Construct_Object
+        Send Define_cAVCheck_Mixin
+    End_Procedure
+
+End_Class
+
+Global_Variable Handle ghoAVCheck
+Get CreateNamed (RefClass(cAVCheck)) "ghoAVCheck" to ghoAVCheck
