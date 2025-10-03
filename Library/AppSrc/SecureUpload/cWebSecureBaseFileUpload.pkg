@@ -1,4 +1,6 @@
-﻿Use WinUuid.pkg
+﻿Define SecureUpload_Included for True
+
+Use WinUuid.pkg
 Use GlobalFunctionsProcedures.pkg
 Use cWorkspace.pkg
 
@@ -40,6 +42,8 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         Property String psPrivate_UploadDir // the directory the files get moved to eventually
         {Visibility=Private}
         Property String psPrivate_TemporaryDir // the optional directory used as intermediary
+        {Visibility=Private}
+        Property String[] psaFilesToBeCommited
         
         {Category=Behavior}
         Property Boolean pbTemporaryDir C_SECUP_USE_TEMPORARY_DIR_DEFAULT
@@ -55,6 +59,8 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         Property Boolean pbCheckVirus C_SECUP_CHECK_VIRUS_DEFAULT
         {Category=Behavior}
         Property Boolean pbCheckContent C_SECUP_CHECK_CONTENT_DEFAULT
+        {Category=Behavior}
+        Property Boolean pbAutoCommit C_SECUP_AUTO_COMMIT_DEFAULT
     End_Procedure
     
     Procedure End_Define_cWebSecureBaseFileUpload
@@ -368,12 +374,41 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         End
         
         // Move the file
-        CopyFile sLocalPath to sDestPath
-        EraseFile sLocalPath
+        If (pbAutoCommit(Self)) Begin            
+            CopyFile sLocalPath to sDestPath
+            EraseFile sLocalPath
+        End
+        Else Begin
+            String[] saFilesToBeCommited
+            // Temporary store the temp locations of the files. So that they will be commited whenever a save is being performed manually
+            Get psaFilesToBeCommited to saFilesToBeCommited
+            Move sLocalPath to saFilesToBeCommited[(SizeOfArray(saFilesToBeCommited))]
+            Set psaFilesToBeCommited to saFilesToBeCommited
+        End
         
         Send OnFileFinished sFileName sDestPath
         Function_Return ""
     End_Function
+    
+    Procedure CommitFiles
+        Integer iCount iSize 
+        String sUploadDir sNewPath
+        String[] saFilesToBeCommited
+        
+        Get psaFilesToBeCommited to saFilesToBeCommited
+        Get psUploadDir to sUploadDir
+        Move (SizeOfArray (saFilesToBeCommited)) to iSize
+        
+        For iCount from 0 to (iSize - 1)
+            Move (sUploadDir + ExtractFileName(saFilesToBeCommited[iCount])) to sNewPath
+            CopyFile saFilesToBeCommited[iCount] to sNewPath
+            EraseFile saFilesToBeCommited[iCount]
+        Loop
+        
+        // Empty the array after the files are commited
+        Move (ResizeArray(saFilesToBeCommited, 0)) to saFilesToBeCommited
+        Set psaFilesToBeCommited to saFilesToBeCommited
+    End_Procedure
     
     {Visibility=Private}
     Function TemporaryOrUploadDir Returns String
