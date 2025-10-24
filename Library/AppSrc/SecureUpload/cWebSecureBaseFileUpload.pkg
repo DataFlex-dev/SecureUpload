@@ -344,7 +344,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         // otherwise we have to move anyway.
         If (not(IsTemporaryDirEnabled(Self)) and bAutoNaming) Begin
             Send OnFileFinished sFileName sLocalPath
-            Function_Return ""
+            Function_Return sFileName
         End
         
         // If autonaming is on, we first try to move the file with the currently mangled name.
@@ -387,7 +387,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         End
         
         Send OnFileFinished sFileName sDestPath
-        Function_Return ""
+        Function_Return sFileName
     End_Function
     
     Procedure CommitFiles
