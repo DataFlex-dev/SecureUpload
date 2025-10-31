@@ -22,7 +22,6 @@ Enum_List
     Define C_SECUP_FILENAME_DOES_NOT_CONTAIN_EXTENSION
 End_Enum_List
 
-{ OverrideFunction = OnFileUpload Visibility = Private }
 Class cWebSecureBaseFileUpload_Mixin is a Mixin
     
     Import_Class_Protocol cAVCheck_Mixin

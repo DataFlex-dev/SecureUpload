@@ -2,7 +2,6 @@
 Use SecureUpload\cWebSecureBaseFileUpload.pkg
 
 { OverrideFunction = OnFileUpload Visibility = Private }
-{ OverrideFunction = OnLocalFileUpload Visibility = Private }
 Class cWebSecureFileUploadForm is a cWebFileUploadForm
     Import_Class_Protocol cWebSecureBaseFileUpload_Mixin
 
