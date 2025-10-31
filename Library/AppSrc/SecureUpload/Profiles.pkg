@@ -2,8 +2,8 @@
 Use SecureUpload\Profiles\cWebSecureVideoUploadButton.pkg
 Use SecureUpload\Profiles\cWebSecureArchiveUploadButton.pkg
 Use SecureUpload\Profiles\cWebSecureArchiveUploadForm.pkg
-Use SecureUpload\Profiles\cWebSecureBinaryUploadButton.pkg
-Use SecureUpload\Profiles\cWebSecureBinaryUploadForm.pkg
+Use SecureUpload\Profiles\cWebSecureApplicationUploadButton.pkg
+Use SecureUpload\Profiles\cWebSecureApplicationUploadForm.pkg
 Use SecureUpload\Profiles\cWebSecureDocUploadButton.pkg
 Use SecureUpload\Profiles\cWebSecureDocUploadForm.pkg
 Use SecureUpload\Profiles\cWebSecureImageUploadButton.pkg
