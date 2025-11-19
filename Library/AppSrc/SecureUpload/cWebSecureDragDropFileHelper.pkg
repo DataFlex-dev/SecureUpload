@@ -1,0 +1,83 @@
+Use cWebDragDropFileHelper.pkg
+Use SecureUpload\cWebSecureBaseFileUpload.pkg
+
+Class cWebSecureDragDropFileHelper is a cWebDragDropFileHelper
+    Import_Class_Protocol cWebSecureBaseFileUpload_Mixin
+    
+    Procedure Construct_Object
+        Forward Send Construct_Object
+
+        Send Define_cWebSecureBaseFileUpload
+    End_Procedure
+
+    { Visibility=Private }
+    Function FileDrop String sDropTargetName Integer eDropPosition Returns String
+        String[][] aFiles 
+        String[][] aResult
+        String sPath sData
+        Integer iFile iTo
+        Handle hoJsonObj hoJsonDragData hoJsonDropData hoDropTarget hoJson
+
+        //  Parse JSON
+        Get phoActionJsonData to hoJson
+        
+        Get Member of hoJson "DragData" to hoJsonDragData // <-- Contains files array
+        Get Member of hoJson "DropData" to hoJsonDropData // Drop data based on target
+        
+        Get WebObjectByName sDropTargetName to hoDropTarget
+
+        If (hoDropTarget <> C_WebUnresolvedObject) Begin
+            Set peDropPosition to eDropPosition
+            Set phoJsonDropData of hoDropTarget to hoJsonDropData
+            Set phoDropTarget to hoDropTarget
+        End
+        
+        // Extract files
+        Get JsonToDataType of hoJsonDragData to aFiles
+        
+        Move (SizeOfArray(aFiles) - 1) to iTo
+        
+        For iFile from 0 to iTo
+            Move aFiles[iFile][0] to aResult[iFile][0]
+            Get GenerateUploadPathForFile aFiles[iFile][1] to sPath
+            
+            If (sPath <> "") Begin
+                Get FileUploadKey of ghoWebResourceManager sPath to aResult[iFile][1]
+            End
+            Else Begin
+                Move "" to aResult[iFile][1]
+            End
+        Loop
+        
+        //  Return upload paths to client
+        Get Create (RefClass(cJsonObject)) to hoJsonObj
+        Send DataTypeToJson of hoJsonObj aResult
+        Get Stringify of hoJsonObj to sData
+        Send Destroy of hoJsonObj
+        
+        Function_Return sData
+    End_Function
+
+    // User augmented, can be used to move the file based on the Drop Target/Drop Position
+    {MethodType = Event}
+    Procedure OnFileDropFinished String sFileName String sPath Handle hoDropTarget WebDropPosition eDropPosition
+        // empty stub
+    End_Procedure
+
+    {MethodType = Event}
+    Procedure OnFileDropFailed String sFileName String sPath Handle hoDropTarget WebDropPosition eDropPosition
+        // empty stub
+    End_Procedure
+
+    { Visibility=Private }
+    Function DoFileFinished String sFileName String sResourceId Returns String
+        Function_Return (DoFileFinishedEx(Self, sFileName, sResourceId, (RefProc(OnFileDropFailed)), (RefProc(OnFileDropFinished))))
+    End_Function
+    
+    Procedure End_Construct_Object
+        Forward Send End_Construct_Object
+
+        Send End_Define_cWebSecureBaseFileUpload
+    End_Procedure
+
+End_Class

@@ -11,6 +11,7 @@ Use cWebLabel.pkg
 Use cWebList.pkg
 Use cWebColumn.pkg
 Use SecureUpload\Profiles.pkg
+Use SecureUpload\cWebSecureDragDropFileHelper.pkg
 
 Object oDashboard is a cWebView
     Set piMaxWidth to 1024
@@ -37,10 +38,212 @@ Object oDashboard is a cWebView
             
         End_Object
         
+        Object oTreeViewFiles is a cWebTreeView
+            Set piColumnSpan to 12
+            Set piHeight to 500
+            
+            Function OnLoadChildNodes String sId String sValue Integer iLevel Returns tWebTreeItem[]
+                tWebTreeItem[] aItems
+                String[] asFolders asFolderContents
+                String sPath sFolderPath sItemId
+                Integer i j iIndex
+                
+                Forward Get OnLoadChildNodes sId sValue iLevel to aItems
+                
+                // Read folders
+                Get DragDropDemoPath to sPath
+                
+                Move 0 to iIndex
+                                
+                Get ReadFolderContent sPath to asFolders
+                
+                If (SearchArray("Folder 1", asFolders) < 0) ;
+                    Move "Folder 1" to asFolders[SizeOfArray(asFolders)]
+                If (SearchArray("Folder 2", asFolders) < 0) ;
+                    Move "Folder 2" to asFolders[SizeOfArray(asFolders)]
+                If (SearchArray("Folder 3", asFolders) < 0) ;
+                    Move "Folder 3" to asFolders[SizeOfArray(asFolders)]
+                
+                
+                For i from 0 to (SizeOfArray(asFolders) -1)
+                    Move (sPath + '/' + asFolders[i]) to sFolderPath
+                    Move (asFolders[i]) to sItemId
+                    
+                    Move asFolders[i] to aItems[iIndex].sName
+                    Move sItemId to aItems[iIndex].sId
+                    Move True to aItems[iIndex].bFolder
+                    
+                    Get ReadFolderContent sFolderPath to asFolderContents
+                    
+                    Increment iIndex
+                    
+                    For j from 0 to (SizeOfArray(asFolderContents) - 1)
+                        Move asFolderContents[j] to aItems[iIndex].sName
+                        Move sItemId to aItems[iIndex].sParentId
+                        Move (asFolders[i] + "\" + asFolderContents[j]) to aItems[iIndex].sId
+                        
+                        Increment iIndex
+                    Loop
+                Loop
+                
+
+                Function_Return aItems
+            End_Function
+            
+            Function ReadFolderContent String sFolderPath Returns String[]
+                String[] asRet
+                String sLine sFolder
+                Boolean bExists
+                
+                File_Exist sFolderPath bExists
+                
+                If (bExists) Begin
+                    Direct_Input ("dir: " + sFolderPath)
+                    Repeat
+                       Readln sLine
+                       If (sLine <> '[.]' and sLine <> '[..]' and sLine <> '') Begin
+                           Move (Replace('[', sLine, '')) to sFolder
+                           Move (Replace(']', sFolder, '')) to sFolder
+                           
+                           Move sFolder to asRet[SizeOfArray(asRet)]  
+                       End
+                    Until (SeqEof)
+                End
+                 
+                Function_Return asRet
+            End_Function
+
+            Object oFileContextMenu is a cWebContextMenu
+                Set peContext to C_WebUIContextTreeviewItem
+                Set pbShowIcons to True
+
+                Object oDownloadFileBtn is a cWebMenuItem
+                    Set psCaption to "Download"
+                    
+                    Procedure OnClick
+                        String sTreeItemId sPath sUrl
+                        
+                        WebGet psContextValue of oFileContextMenu to sTreeItemId
+                        
+                        If (sTreeItemId <> "") Begin
+                            //  Assemble path
+                            Get DragDropDemoPath to sPath
+                            Move (sPath + "\" + sTreeItemId) to sPath
+                            
+                            Get CustomDownloadURL of ghoWebResourceManager sPath True "" True 24 to sUrl
+                            
+                            If (sUrl <> "") ;
+                                Send NavigateToPage sUrl btCurrentWindow
+                        End
+                    End_Procedure
+                End_Object
+
+                Object oDeleteFileBtn is a cWebMenuItem
+                    Set psCaption to "Delete"
+                    Set psCSSClass to "WebIcon_Delete"
+                    
+                    { WebProperty=Server }
+                    Property String psFileToDelete ""
+                                        
+                    Procedure ConfirmDelete Integer eConfirmMode
+                        String sFile sPath
+                        Boolean bExists
+                        
+                        If (eConfirmMode=cmYes) Begin
+                            WebGet psFileToDelete to sFile
+                            Get DragDropDemoPath to sPath
+                            Move (sPath + "\" + sFile) to sPath
+                            
+                            //  Do the delete
+                            File_Exist sPath bExists
+                            If (bExists) ; 
+                                EraseFile sPath
+                            
+                            //  Tell the treeview
+                            Send RemoveNode of oTreeViewFiles sFile
+                        End
+                    End_Procedure
+                    
+                    // this tells the system that this method is allowed for this object
+                    WebPublishProcedure ConfirmDelete
+                    
+                    Procedure OnClick
+                        String sTreeItemId
+                        WebGet psContextValue of oFileContextMenu to sTreeItemId
+                        
+                        WebSet psFileToDelete to sTreeItemId
+                        Send ShowYesNo (Self) (RefProc(ConfirmDelete)) (SFormat("Are you sure you want to delete '%1'?", sTreeItemId)) "Confirm" 
+                    End_Procedure
+                End_Object
+            End_Object
+        End_Object
     End_Object
+    
+    Object oFileDropHelper is a cWebSecureDragDropFileHelper
+        Send RegisterDropTarget oTreeViewFiles C_WebDropTreeviewFolder
+        
+        Procedure OnFileDropFinished String sFileName String sPath Handle hoDropTarget WebDropPosition eDropPosition
+            Boolean bExists
+            String sDropDemoPath sNewPath
+            tWebTreeViewDropData tDropData
+            tWebTreeItem newItem
+            
+            Get DragDropDemoPath to sDropDemoPath
+            Get DropData of hoDropTarget to tDropData
+            
+            //  Assemble path (and generate folders if they do not exist on the go)
+            File_Exist sDropDemoPath bExists
+            If (not(bExists)) Begin
+                Make_Directory sDropDemoPath
+            End
+            
+            If (Trim(tDropData.data.sName) <> "") Begin
+                Move (sDropDemoPath + "\" + Trim(tDropData.data.sName)) to sNewPath
+                
+                File_Exist sNewPath bExists
+                If (not(bExists)) Begin
+                    Make_Directory sNewPath
+                End
+            End
+            
+            Move (sNewPath + "\" + sFileName) to sNewPath
+            
+            //  Check if we are not overwriting an existing file
+            File_Exist sNewPath bExists
+            If (bExists) Begin
+                Send UserError "File already exists!"
+                Procedure_Return
+            End
+            
+            CopyFile sPath to sNewPath
+            File_Exist sPath bExists
+            If (bExists) Begin
+                EraseFile sPath
+            End
+            
+            Move (Right(sNewPath, Length(sNewPath) - Length(sDropDemoPath) - 1)) to newItem.sId
+            Move (Left(newItem.sId, RightPos("\", newItem.sId) - 1)) to newItem.sParentId
+            Move sFileName to newItem.sName
+
+            Send InsertNode of oTreeViewFiles newItem
+            Send Select of oTreeViewFiles newItem.sId
+        End_Procedure
+    End_Object
+    
+    Function DragDropDemoPath Returns String
+        String sPath
+        
+        Get UploadFolder of ghoWebApp True to sPath
+        Move (sPath + "\DragDropDemo") to sPath
+        
+        Function_Return sPath
+    End_Function
     
     Procedure OnBeforeShow
         // Each time this view is shown we will update the appropriate information.
+        String sDragDropDemoPath
+        Get DragDropDemoPath to sDragDropDemoPath
+        Send RegisterDownloadFolder of ghoWebResourceManager sDragDropDemoPath
     End_Procedure
 
 End_Object
