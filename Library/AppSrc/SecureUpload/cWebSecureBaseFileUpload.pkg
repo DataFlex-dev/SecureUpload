@@ -42,7 +42,11 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         {Visibility=Private}
         Property String psPrivate_TemporaryDir // the optional directory used as intermediary
         {Visibility=Private}
-        Property String[] psaFilesToBeCommited
+        Property String[] psaFilesToBeCommited // used when pbAutoCommit = False
+        { Visibility = Private }
+        Property Handle phoDropTarget // Used for the DragDropFileHelper
+        { Visibility = Private }
+        Property Integer peDropPosition // Used for the DragDropFileHelper
         
         {Category=Behavior}
         Property Boolean pbTemporaryDir C_SECUP_USE_TEMPORARY_DIR_DEFAULT
@@ -263,10 +267,15 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         End
         Function_Return True
     End_Function
-    
+
     { Visibility=Private }
-    Function DoFileFinished String sFileName String sResourceId Returns String
+    Function DoFileFinishedEx String sFileName String sResourceId Handle hoFileFailed Handle hoFileFinished Returns String
         // sFileName not to be trusted but 
+        Handle hoDropTarget
+        Integer eDropPosition
+        
+        Get peDropPosition to eDropPosition
+        Get phoDropTarget to hoDropTarget
         
         // retrieve sLocalPath
         String sLocalPath
@@ -275,7 +284,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
             If (pbAutoEraseFileOnFail(Self)) Begin
                 EraseFile sLocalPath
             End
-            Send OnFileFailed sFileName "" C_SECUP_INVALID_UPLOAD_RECORD  (SecUpErrToMessage(Self, C_SECUP_INVALID_UPLOAD_RECORD, sFileName))
+            Send hoFileFailed sFileName "" C_SECUP_INVALID_UPLOAD_RECORD  (SecUpErrToMessage(Self, C_SECUP_INVALID_UPLOAD_RECORD, sFileName)) hoDropTarget eDropPosition
             Function_Return ""
         End
         
@@ -295,7 +304,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
                     EraseFile sLocalPath
                 End
                 Get AVErrToMessage iErr sFileName to sMessage
-                Send OnFileFailed sFileName sLocalPath C_SECUP_AVCHECK_FAILED sMessage
+                Send hoFileFailed sFileName sLocalPath C_SECUP_AVCHECK_FAILED sMessage hoDropTarget eDropPosition
                 Function_Return ""
             End
         End
@@ -308,7 +317,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
                     EraseFile sLocalPath
                 End
                 Get FileErrToMessage iErr sFileName to sMessage
-                Send OnFileFailed sFileName sLocalPath C_SECUP_FILETYPE_CHECK_FAILED sMessage
+                Send hoFileFailed sFileName sLocalPath C_SECUP_FILETYPE_CHECK_FAILED sMessage
                 Function_Return ""
             End
         End
@@ -321,14 +330,14 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
                 If (pbAutoEraseFileOnFail(Self)) Begin
                     EraseFile sLocalPath
                 End
-                Send OnFileFailed sFileName sLocalPath C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE (SecUpErrToMessage(Self, C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE, sFileName))
+                Send hoFileFailed sFileName sLocalPath C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE (SecUpErrToMessage(Self, C_SECUP_COULD_NOT_DETERMINE_FILE_SIZE, sFileName)) hoDropTarget eDropPosition
                 Function_Return ""
             End
             If (ullSize > pullMaxFileSize(Self)) Begin
                 If (pbAutoEraseFileOnFail(Self)) Begin
                     EraseFile sLocalPath
                 End
-                Send OnFileFailed sFileName sLocalPath C_SECUP_UPLOAD_TOO_LARGE (SecUpErrToMessage(Self, C_SECUP_UPLOAD_TOO_LARGE, sFileName))
+                Send hoFileFailed sFileName sLocalPath C_SECUP_UPLOAD_TOO_LARGE (SecUpErrToMessage(Self, C_SECUP_UPLOAD_TOO_LARGE, sFileName)) hoDropTarget eDropPosition
                 Function_Return ""
             End
         End
@@ -342,7 +351,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         // If we are not using temporary directories and auto naming is on, then we are already done.
         // otherwise we have to move anyway.
         If (not(IsTemporaryDirEnabled(Self)) and bAutoNaming) Begin
-            Send OnFileFinished sFileName sLocalPath
+            Send hoFileFailed sFileName sLocalPath
             Function_Return sFileName
         End
         
@@ -367,7 +376,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
                 If (pbAutoEraseFileOnFail(Self)) Begin
                     EraseFile sLocalPath
                 End
-                Send OnFileFailed sFileName sLocalPath C_SECUP_FILENAME_ALREADY_EXISTS (SecUpErrToMessage(Self, C_SECUP_FILENAME_ALREADY_EXISTS, sFileName))
+                Send hoFileFailed sFileName sLocalPath C_SECUP_FILENAME_ALREADY_EXISTS (SecUpErrToMessage(Self, C_SECUP_FILENAME_ALREADY_EXISTS, sFileName)) hoDropTarget eDropPosition 
                 Function_Return ""
             End
         End
@@ -385,8 +394,13 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
             Set psaFilesToBeCommited to saFilesToBeCommited
         End
         
-        Send OnFileFinished sFileName sDestPath
+        Send hoFileFinished sFileName sDestPath hoDropTarget eDropPosition
         Function_Return sFileName
+    End_Function
+    
+    { Visibility=Private }
+    Function DoFileFinished String sFileName String sResourceId Returns String
+        Function_Return (DoFileFinishedEx(Self, sFileName, sResourceId, (RefProc(OnFileFailed)), (RefProc(OnFileFinished))))
     End_Function
     
     Procedure CommitFiles

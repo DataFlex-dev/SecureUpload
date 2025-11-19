@@ -130,6 +130,7 @@ Class cAVCheck_Mixin is a cObject
     Function AVEscape String sValue Returns String
         Move (Replaces('"', sValue, '\"')) to sValue
         Move (Replaces('"', sValue, '\"')) to sValue
+        Move (Replaces('/', sValue, '\')) to sValue
         Function_Return sValue
     End_Function
     
