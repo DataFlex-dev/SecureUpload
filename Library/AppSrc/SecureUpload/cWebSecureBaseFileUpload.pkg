@@ -41,7 +41,8 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         Property String psPrivate_UploadDir // the directory the files get moved to eventually
         {Visibility=Private}
         Property String psPrivate_TemporaryDir // the optional directory used as intermediary
-        {Visibility=Private}
+        { Visibility = Private }
+        { WebProperty = Server }
         Property String[] psaFilesToBeCommited // used when pbAutoCommit = False
         { Visibility = Private }
         Property Handle phoDropTarget // Used for the DragDropFileHelper
@@ -389,9 +390,9 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         Else Begin
             String[] saFilesToBeCommited
             // Temporary store the temp locations of the files. So that they will be commited whenever a save is being performed manually
-            Get psaFilesToBeCommited to saFilesToBeCommited
+            WebGet psaFilesToBeCommited to saFilesToBeCommited
             Move sLocalPath to saFilesToBeCommited[(SizeOfArray(saFilesToBeCommited))]
-            Set psaFilesToBeCommited to saFilesToBeCommited
+            WebSet psaFilesToBeCommited to saFilesToBeCommited
         End
         
         Send hoFileFinished sFileName sDestPath hoDropTarget eDropPosition
@@ -408,7 +409,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         String sUploadDir sNewPath
         String[] saFilesToBeCommited
         
-        Get psaFilesToBeCommited to saFilesToBeCommited
+        WebGet psaFilesToBeCommited to saFilesToBeCommited
         Get psUploadDir to sUploadDir
         Move (SizeOfArray (saFilesToBeCommited)) to iSize
         
@@ -420,7 +421,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         
         // Empty the array after the files are commited
         Move (ResizeArray(saFilesToBeCommited, 0)) to saFilesToBeCommited
-        Set psaFilesToBeCommited to saFilesToBeCommited
+        WebSet psaFilesToBeCommited to saFilesToBeCommited
     End_Procedure
     
     {Visibility=Private}
