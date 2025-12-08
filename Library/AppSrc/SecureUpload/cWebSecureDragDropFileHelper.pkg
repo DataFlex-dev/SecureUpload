@@ -37,6 +37,8 @@ Class cWebSecureDragDropFileHelper is a cWebDragDropFileHelper
         
         Move (SizeOfArray(aFiles) - 1) to iTo
         
+        Send OnUpdateSettings
+        
         For iFile from 0 to iTo
             Move aFiles[iFile][0] to aResult[iFile][0]
             Get GenerateUploadPathForFile aFiles[iFile][1] to sPath

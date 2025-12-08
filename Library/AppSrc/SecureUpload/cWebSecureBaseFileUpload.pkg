@@ -200,6 +200,8 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         
         Move (SizeOfArray(aFiles) - 1) to iTo
         
+        Send OnUpdateSettings
+        
         For iFile from 0 to iTo
             Move aFiles[iFile][0] to aResult[iFile][0]
             Get GenerateUploadPathForFile aFiles[iFile][1] to sPath
@@ -220,6 +222,12 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         
         Function_Return sData
     End_Function
+    
+    { MethodType=Event }
+    // Here you can load the settings from the database.
+    Procedure OnUpdateSettings
+        // Empty Stub
+    End_Procedure
     
     { Visibility=Private }
     Register_Function StrCount String sSearch String sValue Returns UBigInt
