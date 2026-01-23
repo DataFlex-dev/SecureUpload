@@ -1,0 +1,17 @@
+{
+    "dependencies": [
+        "DataFlex-dev/AVCheck#1.0.0",
+        "DataFlex-dev/File Type#1.0.0"
+    ],
+    "description": "Enhanced security for uploading files.",
+    "df": 26.0,
+    "package": {
+        "df-max": 26.0,
+        "df-min": 26.0,
+        "version": "1.0.0"
+    },
+    "paths": {
+        "configFile": "Config.ws",
+        "fileList": "DummyFilelist.cfg"
+    }
+}
