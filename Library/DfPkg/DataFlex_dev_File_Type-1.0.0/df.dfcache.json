@@ -1,0 +1,16 @@
+{
+    "install": [
+        {
+            "hash": "FccFLbj+C9b0H4OemD1DcCpUlbIgQLYe9ApYy8CkRpg=",
+            "origin": "Programs/libmagic.dll"
+        },
+        {
+            "hash": "38E05W+mNjkzhzIn47gPDd4PjS0ol6TdhYDj9amQZT4=",
+            "origin": "Programs/libmagic64.dll"
+        },
+        {
+            "hash": "DrtCwkTcHlSM88PCpegstTrUibGCGCVR5ek/jV1BFfs=",
+            "origin": "Programs/magic.mgc"
+        }
+    ]
+}

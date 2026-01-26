@@ -1,0 +1,12 @@
+{
+    "description": "Anti virus check.",
+    "df": 26.0,
+    "package": {
+        "df-max": 26.0,
+        "df-min": 26.0,
+        "version": "1.0.0"
+    },
+    "paths": {
+        "fileList": "DummyFilelist.cfg"
+    }
+}
