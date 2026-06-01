@@ -451,10 +451,10 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         End
         
         // Create if not exists
-        Boolean bExists
+        Boolean bExists bOk
         File_Exist sDir bExists
         If (not(bExists)) Begin
-            Make_Directory sDir
+            Get CreateDirectoryRecursive sDir to bOk
             
             // If it still does not exist cancel
             File_Exist sDir bExists
