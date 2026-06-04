@@ -360,7 +360,7 @@ Class cWebSecureBaseFileUpload_Mixin is a Mixin
         // If we are not using temporary directories and auto naming is on, then we are already done.
         // otherwise we have to move anyway.
         If (not(IsTemporaryDirEnabled(Self)) and bAutoNaming) Begin
-            Send hoFileFailed sFileName sLocalPath
+            Send hoFileFinished sFileName sLocalPath hoDropTarget eDropPosition
             Function_Return sFileName
         End
         

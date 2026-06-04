@@ -8,7 +8,8 @@
     "package": {
         "df-max": 26.0,
         "df-min": 26.0,
-        "version": "1.0.0"
+        "license": "BSD-3-Clause",
+        "version": "1.0.2"
     },
     "paths": {
         "configFile": "Config.ws",

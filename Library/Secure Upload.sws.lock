@@ -1,0 +1,11 @@
+{
+    "dependencies": {
+        "DataFlex-dev/AVCheck": {
+            "ref": "1.0.0"
+        },
+        "DataFlex-dev/File Type": {
+            "ref": "1.0.0"
+        }
+    },
+    "lockVersion": "1.0.0"
+}
