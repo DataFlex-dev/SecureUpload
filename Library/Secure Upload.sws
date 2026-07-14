@@ -1,7 +1,8 @@
 {
     "dependencies": [
-        "DataFlex-dev/AVCheck#1.0.0",
-        "DataFlex-dev/File Type#1.0.0"
+        "DataFlex-dev/AVCheck#^1.0.0",
+        "DataFlex-dev/File Type#^1.0.0",
+        "DataFlex-dev/Web UI#^1.0.0",
     ],
     "description": "Enhanced security for uploading files.",
     "df": 26.0,
