@@ -5,6 +5,9 @@
         },
         "DataFlex-dev/File Type": {
             "ref": "1.0.0"
+        },
+        "DataFlex-dev/Web UI": {
+            "ref": "1.0.52"
         }
     },
     "lockVersion": "1.0.0"

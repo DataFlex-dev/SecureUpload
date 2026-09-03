@@ -1,14 +1,12 @@
 {
     "dependencies": [
-        "DataFlex-dev/AVCheck#^1.0.0",
-        "DataFlex-dev/File Type#^1.0.0",
-        "DataFlex-dev/Web UI#^1.0.0",
+        "DataFlex-dev/AVCheck#~1.0.0",
+        "DataFlex-dev/File Type#~1.0.0",
+        "DataFlex-dev/Web UI#~1.0.0"
     ],
     "description": "Enhanced security for uploading files.",
     "df": 26.0,
     "package": {
-        "df-max": 26.0,
-        "df-min": 26.0,
         "license": "BSD-3-Clause",
         "version": "1.0.2"
     },
