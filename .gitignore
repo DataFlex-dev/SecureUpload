@@ -6,6 +6,7 @@
 **.exe
 **.log
 **/IdeSrc/*
+**/DfPkg
 **/LoginEncryptionKey.inc
 Demo/Programs/**.dll
 Demo/AppHtml/CssThemes

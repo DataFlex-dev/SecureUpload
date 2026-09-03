@@ -1,11 +1,10 @@
 [Workspace]
-Home=.\
-AppSrcPath=.\AppSrc
-AppHTMLPath=.\
-BitmapPath=.\
-IdeSrcPath=.\
-DataPath=.\
-DDSrcPath=.\
-HelpPath=.\
-ProgramPath=.\Programs
-FileList=.\DummyFilelist.cfg
+Home=.
+AppHTMLPath=
+AppSrcPath=AppSrc
+DataPath=
+DDSrcPath=
+IdeSrcPath=IdeSrc
+ProgramPath=Programs
+FileList=DummyFilelist.cfg
+Description=Enhanced security for uploading files.
