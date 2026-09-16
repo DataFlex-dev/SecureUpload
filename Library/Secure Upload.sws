@@ -8,7 +8,7 @@
     "df": 26.0,
     "package": {
         "license": "BSD-3-Clause",
-        "version": "1.0.2"
+        "version": "1.0.3"
     },
     "paths": {
         "configFile": "Config.ws",
